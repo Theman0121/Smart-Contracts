@@ -28,20 +28,19 @@ contract AVAXSpies is ERC721, Ownable {
     // Public Functions
     function mint(uint[] memory tokenIds) external payable {
         require(isMintEnabled, 'minting not enabled');
-        for(uint i=0;i<tokenIds.length;i++){
-            require(stik.ownerOf(tokenIds[i])==msg.sender,"Sender not owner");
-            
-          stik.transferFrom(msg.sender,address(0),tokenIds[i]);
         require(tokenIds.length <= max_mint_per_tx, 'Maximum mint of 10 NFTs per transaction.');
         uint256 curTotalSupply = totalSupply;
         require(curTotalSupply + tokenIds.length <= maxSupply, 'Exceeds maxSupply');
         require(tokenIds.length * mintPrice <= msg.value, 'Insufficient funds. More AVAX needed!');
 
-        mintedWallets[msg.sender]++;
-        totalSupply++;
-        uint256 tokenId = totalSupply;
-        _safeMint(msg.sender, tokenId);
-    }
+        for(uint i=0;i<tokenIds.length;i++){
+            require(stik.ownerOf(tokenIds[i])==msg.sender,"Sender not owner");
+            stik.transferFrom(msg.sender,address(0),tokenIds[i]);
+            mintedWallets[msg.sender]++;
+            totalSupply++;
+            uint256 tokenId = totalSupply;
+            _safeMint(msg.sender, tokenId);
+        }
     }
 
     // Owner-only Functions
