@@ -1,8 +1,10 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.8;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
 
 interface IIERC721 is IERC165 {
     /**
@@ -129,10 +131,10 @@ interface IIERC721 is IERC165 {
     function burn(uint tokenId) external;
 }
 
-contract AVAXSpies is ERC721, Ownable {
+contract AVAXSpies is ERC721, Ownable, Pausable {
     using Strings for uint256;
     uint256 public mintPrice = 1 ether;
-    uint256 public maxSupply;
+    uint256 public constant maxSupply = 1000;
     uint256 public totalSupply;
     bool public isMintEnabled;
     uint public constant max_mint_per_tx = 10;
@@ -143,12 +145,12 @@ contract AVAXSpies is ERC721, Ownable {
     IIERC721 public stik;
 
     constructor(address _stik_address) payable ERC721('AVAX Spies', 'SPIES'){
-        maxSupply = 1000;
         // Base IPFS URI of the NFT metadata
         baseUri = "ipfs://xxxxxxxxxxxxxxxxxxxxxxxxx/";
-        totalSupply = 0;
         stik = IIERC721(_stik_address);
     }
+
+
     
     // Public Functions
     function mint(uint[] memory tokenIds) external payable {
@@ -160,21 +162,17 @@ contract AVAXSpies is ERC721, Ownable {
 
         for(uint i=0;i<tokenIds.length;i++){
             require(stik.ownerOf(tokenIds[i])==msg.sender,"Sender not owner");
+            stik.transferFrom(msg.sender, address(this), tokenIds[i]);
             stik.burn(tokenIds[i]);
             mintedWallets[msg.sender]++;
             totalSupply++;
-            uint256 tokenId = totalSupply;
-            _safeMint(msg.sender, tokenId);
+            _safeMint(msg.sender, totalSupply);
         }
     }
 
     // Owner-only Functions
     function toggleIsMintEnabled() external onlyOwner {
         isMintEnabled = !isMintEnabled;
-    }
-
-    function setMaxSupply(uint256 _maxSupply) external onlyOwner {
-        maxSupply = _maxSupply;
     }
 
     function setBaseUri(string memory _baseUri) external onlyOwner {
